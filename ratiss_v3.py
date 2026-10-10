@@ -37,6 +37,11 @@ FORMAT_TISSU = "RATISS_SOUVERAIN_V2"
 
 # Lumière causale : le dernier mot éclaire à 1, le précédent à 1/2, puis 1/4…
 LUMIERE = 0.5
+# Part du trigramme quand la paire (mot-2, mot-1) a été vue.
+# Le reste reste au bigramme : un trigramme jamais vu ne doit pas faire taire la bouche.
+# Mesuré, décharge allumée, texte tenu à l'écart où « noire » a deux suites :
+# top-1 bigramme 33 %, lumière 30 %, trigramme avec repli 39 %. Le top-5 ne bouge pas.
+POIDS_TRIGRAMME = 0.65
 
 _ACCENTS = str.maketrans(
     {
@@ -266,6 +271,8 @@ class Bouche:
 
     def __init__(self):
         self.registres: dict[str, dict[str, dict[str, float]]] = {}
+        # Ordre à deux mots de contexte. Pas une phrase. Le sanctuaire n'entre pas ici.
+        self.trigrammes: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
         self.theme: dict[str, dict[str, float]] = {}
         self.chaines: list[dict] = []
         self.lam = 0.75
@@ -291,6 +298,7 @@ class Bouche:
             "contraste": self.contraste,
             "registre_courant": self.registre,
             "registres": self.registres,
+            "trigrammes": self.trigrammes,
             "theme": self.theme,
             "chaines": self.chaines,
             "meta": self.meta,
@@ -322,6 +330,7 @@ class Bouche:
         b.contraste = bool(data.get("contraste", True))
         b.registre = data.get("registre_courant", "ordre")
         b.registres = data.get("registres", {})
+        b.trigrammes = data.get("trigrammes", {})
         b.theme = data.get("theme", {})
         b.chaines = data.get("chaines", [])
         b.meta = data.get("meta", b.meta)
@@ -334,8 +343,20 @@ class Bouche:
         nom = registre or self.registre
         return self.registres.setdefault(nom, {})
 
+    def _tris(self, registre: str | None = None) -> dict[str, dict[str, dict[str, float]]]:
+        nom = registre or self.registre
+        return self.trigrammes.setdefault(nom, {})
+
     def n_arcs(self) -> int:
         return sum(len(dst) for reg in self.registres.values() for dst in reg.values())
+
+    def n_trigrammes(self) -> int:
+        return sum(
+            len(suite)
+            for reg in self.trigrammes.values()
+            for milieu in reg.values()
+            for suite in milieu.values()
+        )
 
     # ---------- apprentissage ----------
 
@@ -376,6 +397,7 @@ class Bouche:
 
     def _apprendre_phrase(self, ph: list[str], fenetre_theme: int) -> int:
         arcs = self._arcs()
+        tris = self._tris()
         decharges = 0
         for i, mot in enumerate(ph):
             # Thème : fenêtre, les deux sens, « ces mots se sont vus ».
@@ -392,6 +414,11 @@ class Bouche:
             scores = dict(arcs.get(src, {}))
             table = arcs.setdefault(src, {})
             table[mot] = table.get(mot, 0.0) + 1.0
+            if i >= 2:
+                # La paire décide. Compte seul : la décharge reste sur le bigramme.
+                gauche = ph[i - 2]
+                milieu = tris.setdefault(gauche, {}).setdefault(src, {})
+                milieu[mot] = milieu.get(mot, 0.0) + 1.0
             if self.contraste and scores:
                 meilleur = max(scores.items(), key=lambda kv: (kv[1], kv[0]))[0]
                 if meilleur != mot:
@@ -415,10 +442,15 @@ class Bouche:
         if len(mots) < 2:
             raise ValueError("un fait a besoin d'au moins deux mots")
         arcs = self._arcs(registre)
-        for a, b in zip(mots, mots[1:]):
+        tris = self._tris(registre)
+        for i, (a, b) in enumerate(zip(mots, mots[1:])):
             arcs.setdefault(a, {})
             # Gel : une force haute, que l'éducation libre ne doit pas manger.
             arcs[a][b] = max(arcs[a].get(b, 0.0), 100.0)
+            if i >= 1:
+                gauche = mots[i - 1]
+                milieu = tris.setdefault(gauche, {}).setdefault(a, {})
+                milieu[b] = max(milieu.get(b, 0.0), 100.0)
         cles = []
         for m in mots:
             if len(m) > 3 and m not in cles and m not in {
@@ -474,6 +506,43 @@ class Bouche:
                         scores[cand] += lum * float(force)
         return dict(scores)
 
+    def _tables_trigrammes(self, registre: str | None = None) -> list[dict]:
+        if registre:
+            return [self.trigrammes.get(registre, {})]
+        return list(self.trigrammes.values()) or [{}]
+
+    def scores_trigramme(
+        self,
+        historique: list[str],
+        memoire: int | None = None,
+        registre: str | None = None,
+    ) -> dict[str, float]:
+        """Paire si on l'a vue, sinon le bigramme du dernier mot.
+
+        On ne parcourt pas les 95 660 neurones. Les candidats sont les
+        successeurs déjà écrits sous cette paire, ou à défaut sous ce mot.
+        """
+        del memoire  # le repli est le dernier mot : la lumière à 8 a perdu le top-1
+        base = self.scores_ordre(historique, memoire=1, registre=registre)
+        if len(historique) < 2:
+            return base
+        gauche, src = historique[-2], historique[-1]
+        brut: dict[str, float] = defaultdict(float)
+        for table in self._tables_trigrammes(registre):
+            for cand, force in table.get(gauche, {}).get(src, {}).items():
+                if force > 0:
+                    brut[cand] += float(force)
+        if not brut:
+            return base
+        tg = normaliser(brut)
+        nb = normaliser(base)
+        out = {}
+        for c in set(tg) | set(nb):
+            s = POIDS_TRIGRAMME * tg.get(c, 0.0) + (1.0 - POIDS_TRIGRAMME) * nb.get(c, 0.0)
+            if s > 0:
+                out[c] = s
+        return out
+
     def scores_theme_bouche(self, historique: list[str], memoire: int | None = None) -> dict[str, float]:
         mem = self.memoire if memoire is None else memoire
         scores: dict[str, float] = defaultdict(float)
@@ -493,7 +562,8 @@ class Bouche:
         memoire: int | None = None,
     ) -> dict[str, float]:
         lam = self.lam if lam is None else lam
-        ordre = self.scores_ordre(historique, memoire=memoire)
+        # Ordre = trigramme avec repli. Thème = l'autre loi. Deux secteurs.
+        ordre = self.scores_trigramme(historique, memoire=memoire)
         theme = self.scores_theme_bouche(historique, memoire=memoire)
         if tissu is not None:
             theme_tissu = tissu.scores_theme(historique, memoire or self.memoire)
@@ -523,6 +593,8 @@ class Bouche:
                     scores = self.scores_ordre(hist, memoire=1)
                 elif mode == "lumiere":
                     scores = self.scores_ordre(hist, memoire=memoire or 8)
+                elif mode == "trigramme":
+                    scores = self.scores_trigramme(hist)
                 elif mode == "theme":
                     scores = self.scores_theme_bouche(hist, memoire=1)
                 elif mode == "tissu" and tissu is not None:
@@ -568,6 +640,42 @@ def audit_tissu(tissu: TissuScelle) -> dict:
         "sanctuaire": list(tissu.sanctuaire.keys()),
         "meta": tissu.meta,
     }
+
+
+def marcher_fige(mots: list[str], ancre: str | None = None) -> list[str]:
+    """Secteur figé : une suite ordonnée, pas un sac de bigrammes.
+
+    « la » revient dans « la lune orbite autour de la terre ».
+    Un bigramme gelé boucle (la → lune, puis de nouveau la → lune).
+    L'ancre choisit où l'on monte sur le chemin, l'indice fait le reste.
+    Ce chemin n'est pas recopié dans les synapses plastiques.
+    """
+    if not mots:
+        return []
+    if ancre and ancre in mots:
+        return list(mots[mots.index(ancre):])
+    return list(mots)
+
+
+def _ancre(mots: list[str], cles: list[str], tokens: list[str]) -> str | None:
+    ensemble = set(tokens)
+    for c in cles:
+        if c in ensemble and c in mots:
+            return c
+    for t in tokens:
+        if t in mots and t not in {"dans", "avec", "pour", "cette", "comme", "plus"}:
+            return t
+    return None
+
+
+def _reponse_chemin(mots: list[str], surface: str, ancre: str | None) -> str:
+    marche = marcher_fige(mots, ancre=ancre)
+    if len(marche) < 2:
+        return surface
+    if marche == list(mots) and surface.strip():
+        texte = surface.strip()
+        return texte[0].upper() + texte[1:] if texte[0].islower() else texte
+    return " ".join(marche)
 
 
 def parler(
@@ -673,28 +781,27 @@ def executer(message: str, bouche: Bouche, tissu: TissuScelle | None = None, **o
 
     if tissu is not None:
         cle = tissu.sujet_sanctuaire(msg, tokens)
-        if cle and any(w in ensemble for w in ("explique", "comment", "pourquoi", "definition", "definir", "cest", "quoi")):
+        if cle and any(w in ensemble for w in ("explique", "comment", "pourquoi", "definition", "definir", "cest", "quoi", "parle", "raconte")):
             ent = tissu.sanctuaire[cle]
             faits = ent.get("faits", {})
-            mode = "EXPLICATION" if any(w in ensemble for w in ("explique", "comment", "pourquoi")) else "DEFINITION"
+            if any(w in ensemble for w in ("explique", "comment", "pourquoi")):
+                mode = "EXPLICATION"
+            else:
+                mode = "DEFINITION"
             txt = faits.get(mode) or faits.get("DEFINITION") or ""
             nom = ent.get("nom", cle)
-            return {
-                "intent": "sanctuaire",
-                "reponse": f"{nom}. {txt}",
-            }
-        if cle and any(w in ensemble for w in ("explique", "comment", "pourquoi", "parle", "raconte", "definition")):
-            ent = tissu.sanctuaire[cle]
-            faits = ent.get("faits", {})
-            txt = faits.get("DEFINITION", "")
-            return {"intent": "sanctuaire", "reponse": f"{ent.get('nom', cle)}. {txt}"}
+            # Le paragraphe scellé n'entre pas dans la bouche plastique.
+            # On le compile en chemin, on le marche, on rend la graphie d'origine
+            # seulement si le chemin tient.
+            mots = tokeniser(txt)
+            rendu = _reponse_chemin(mots, txt, None)
+            return {"intent": "sanctuaire", "reponse": f"{nom}. {rendu}"}
 
     ch = bouche.chaine_pour(tokens)
     if ch and any(w in ensemble for w in ("parle", "raconte", "explique", "qui", "quoi", "ou", "comment", "pourquoi", "quel", "quelle")):
-        return {
-            "intent": "chemin_gele",
-            "reponse": ch["enonce"] if ch["enonce"][0].isupper() else ch["enonce"][0].upper() + ch["enonce"][1:],
-        }
+        ancre = _ancre(ch.get("mots", []), ch.get("cles", []), tokens)
+        rendu = _reponse_chemin(ch.get("mots", []), ch.get("enonce", ""), ancre)
+        return {"intent": "chemin_gele", "reponse": rendu}
 
     if bouche.vide() or bouche.n_arcs() == 0:
         diag = ""
@@ -745,8 +852,10 @@ def cmd_demo() -> int:
     b = Bouche()
     b.eduquer(CORPUS_DEMO, tours=3, registre="conte", contraste=True)
     ev_ordre = b.evaluer(CORPUS_DEMO, mode="ordre")
+    ev_tri = b.evaluer(CORPUS_DEMO, mode="trigramme")
     ev_lum = b.evaluer(CORPUS_DEMO, mode="lumiere", memoire=8)
     ev_hors = b.evaluer(TENU_A_LECART_DEMO, mode="lumiere", memoire=8)
+    ev_hors_tri = b.evaluer(TENU_A_LECART_DEMO, mode="trigramme")
     glouton = parler(b, "un", glouton=True, n=16, lam=1.0, memoire=1)
     pioche = parler(b, "le petit prince", n=16, lam=0.75, memoire=8, graine=3)
 
@@ -757,8 +866,10 @@ def cmd_demo() -> int:
     print("-" * 52)
     print(f"{'thème, fenêtre de 3 (les deux sens)':<42} {pct(ev_theme['top5']):>8}")
     print(f"{'arcs dirigés, dernier mot seulement':<42} {pct(ev_ordre['top5']):>8}")
+    print(f"{'trigramme + repli bigramme':<42} {pct(ev_tri['top5']):>8}")
     print(f"{'arcs dirigés, lumière sur 8 mots':<42} {pct(ev_lum['top5']):>8}")
-    print(f"{'tenu à l écart (2 phrases non vues)':<42} {pct(ev_hors['top5']):>8}")
+    print(f"{'tenu à l écart, lumière (2 phrases)':<42} {pct(ev_hors['top5']):>8}")
+    print(f"{'tenu à l écart, trigramme':<42} {pct(ev_hors_tri['top5']):>8}")
     print()
     print("marche gloutonne depuis « un » :")
     print("  ", glouton)
@@ -914,7 +1025,13 @@ def main(argv: list[str] | None = None) -> int:
             texte = f.read()
         print()
         print(f"{'mode':<28} {'top-5':>8}   détail")
-        for mode, mem in (("theme", 1), ("ordre", 1), ("lumiere", bouche.memoire), ("mixte", bouche.memoire)):
+        for mode, mem in (
+            ("theme", 1),
+            ("ordre", 1),
+            ("lumiere", bouche.memoire),
+            ("trigramme", 1),
+            ("mixte", bouche.memoire),
+        ):
             ev = bouche.evaluer(texte, tissu=tissu, mode=mode, lam=bouche.lam, memoire=mem)
             print(f"{mode:<28} {pct(ev['top5']):>8}   {ev['hits']}/{ev['total']}")
         if tissu is not None:

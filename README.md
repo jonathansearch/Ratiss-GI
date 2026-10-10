@@ -53,6 +53,12 @@ Elle ne jette pas le tissu. Elle ajoute une **deuxième famille de liens**, que 
 
 La bouche ne marche **que** sur `suit`. Le tissu continue de résonner. Deux mémoires, comme la charge et la force. Ici, le thème et l'ordre.
 
+L'ordre, mesuré, n'est plus le bigramme seul. Quand la paire des deux derniers mots a été vue, elle prend 65 % du score et le bigramme du dernier mot garde 35 %. Sinon on retombe sur le bigramme : un trigramme absent ne fait pas taire la bouche. On ne recalcule pas les 95 660 neurones. Les candidats sont les successeurs déjà écrits sous cette paire.
+
+Sur un texte tenu à l'écart où « noire » a deux avenirs (« la mer noire s'étend », « la nuit noire tombait »), décharge allumée, le top-1 passe de 33 % (bigramme) à 39 % (trigramme avec repli). La lumière sur 8 mots descend à 30 %. Le top-5, lui, reste à 67 % : la paire choisit mieux le premier mot, elle n'allonge pas la liste. Une troisième tête, le thème, monte un peu le top-5 en allongeant la liste, et elle n'améliore pas le mot choisi : on ne l'habille pas en attention.
+
+Le sanctuaire reste le secteur figé. Il n'est pas versé dans les synapses plastiques. « explique la fusion » marche le chemin scellé et rend la phrase d'origine, accents compris. Un fait gravé (« la lune orbite… ») se lit depuis son ancre : « lune orbite autour de la terre », sans boucler sur le deuxième « la ».
+
 Le chiffre, toujours le même : sur des phrases que la bouche **n'a pas** vues, le vrai mot suivant est-il dans les 5 meilleurs candidats ? C'est le `top-5`. Tant qu'on ne l'a pas, on juge au ressenti.
 
 Sur le jouet du dépôt (8 phrases, aucun GPU) :
@@ -64,7 +70,7 @@ Sur le jouet du dépôt (8 phrases, aucun GPU) :
 | Lumière sur les 8 derniers mots | 95 % |
 | 2 phrases tenues à l'écart | 67 % |
 
-La marche gloutonne depuis « un » donne : *jardin le petit prince aimait sa rose vivait sous un*. Français sur quelques mots, puis la boucle. C'est la naissance, celle des n-grammes, pas un sommet. Le jouet n'a vu que huit phrases.
+La marche gloutonne depuis « un » donne : *jardin le petit prince aimait sa rose vivait sous un globe*. Français sur quelques mots de plus qu'avec le bigramme seul (il s'arrêtait avant « globe »), puis la boucle. C'est la naissance, pas un sommet. Le jouet n'a vu que huit phrases.
 
 À retenir, parce que c'est le contraire d'une promesse marketing : **allumer les 8 derniers mots ne gagne pas tout seul**. Sur ce jouet, la lumière fait 95 % et le dernier mot seul fait 100 %. La lumière est une hypothèse. On la garde si, sur un vrai texte tenu à l'écart, elle fait monter le top-5. Sinon on ne l'habille pas en transformeur.
 

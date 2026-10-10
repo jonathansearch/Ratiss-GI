@@ -52,16 +52,18 @@ Pas de Q, pas de K, pas de couche. La représentation du « transformeur », che
 ```
 score(candidat) = λ · ordre(candidat) + (1 − λ) · thème(candidat)
 
-ordre(candidat)   = Σ  lumière(distance) · suit(mot_passé → candidat)
-lumière           = 1, 1/2, 1/4… sur les 8 derniers mots
+ordre(candidat)   = 0,65 · trigramme(mot-2, mot-1 → candidat) + 0,35 · bigramme(mot-1 → candidat)
+                    si la paire a été vue, sinon le bigramme seul
 thème(candidat)   = résonance du tissu scellé + fenêtre de 3 apprise avec le texte
 ```
+
+Le trigramme est un compte de paires. Ce n'est pas une phrase rangée dans une synapse, et ce n'est pas un passage sur les 95 660 neurones : seuls les successeurs de la paire, ou du dernier mot, sont candidats. La lumière sur 8 mots reste mesurable (`--memoire`), elle a perdu le top-1 face au repli bigramme.
 
 `λ = 1`, la grammaire sans sujet. `λ = 0`, la nuée actuelle. Le λ qui fait monter le top-5 **et** qui reste sur le sujet, c'est la première bouche. Pas une tête d'attention. Un mélange de deux lois qui sont les tiennes.
 
 Le softmax du LLM est repris, en plus petit : on ne le calcule pas sur 95 660 mots, seulement sur les voisins sortants du mot courant, souvent quelques dizaines. La somme fait 1. On **pioche**. Si on prend toujours le plus fort, la bouche boucle.
 
-Il n'y a pas de boîte noire au sens d'un calcul caché. Chaque arc se lit. `mer → noire : 12` veut dire : douze fois, dans le texte vu, « noire » suivait « mer ». La limite n'est pas le secret. La limite, c'est qu'un bigramme ne voit pas loin. La lumière sur 8 mots est le premier élargissement, et elle doit gagner son top-5 avant qu'on lui ajoute quoi que ce soit.
+Il n'y a pas de boîte noire au sens d'un calcul caché. Chaque arc se lit. `mer → noire : 12` veut dire : douze fois, dans le texte vu, « noire » suivait « mer ». La limite n'est pas le secret. La limite, c'est la portée : le trigramme voit la paire, pas la page. La lumière sur 8 mots a été mesurée, elle ne gagne pas le top-1. On ne l'habille pas en transformeur.
 
 ## L'entraînement
 

@@ -24,8 +24,8 @@ Le thème, lui, a le droit d'avoir les deux sens. C'est sa définition.
 
 État : la liste des mots déjà dits. Pas un vecteur de 95 660 flottants. La liste.
 
-1. On regarde les arcs sortants des mots encore éclairés.
-2. Le dernier mot est multiplié par 1, le précédent par 1/2, celui d'avant par 1/4, jusqu'à `--memoire`.
+1. On regarde les successeurs du dernier mot, et ceux de la paire des deux derniers si elle a été vue. Pas les 95 660 neurones.
+2. Paire vue : 65 % trigramme, 35 % bigramme. Paire absente : bigramme seul.
 3. À côté, le thème : voisins du tissu scellé, plus la fenêtre de 3 apprise pendant l'éducation. Chacun est ramené à un maximum de 1, pour qu'une force 100 ne mange pas un compte de 4.
 4. `score = λ · ordre + (1 − λ) · thème`.
 5. Softmax **sur les candidats qui ont un score**, pas sur tout le vocabulaire.

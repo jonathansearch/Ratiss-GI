@@ -13,8 +13,9 @@
   },
   "bouche": {
     "format": "RATISS_BOUCHE_V3",
-    "orientation": "mot_i -> mot_{i+1} seulement",
+    "orientation": "mot_i -> mot_{i+1}, et la paire (mot_{i-1}, mot_i) -> mot_{i+1} si elle a été vue",
     "fenetre_theme": 3,
+    "poids_trigramme": 0.65,
     "lam": 0.75,
     "memoire": 8,
     "lumiere": 0.5,
