@@ -1,0 +1,3 @@
+# Ratiss GI n'a besoin de rien en dehors de la bibliothèque standard.
+# Python 3.10 ou plus récent.
+# PyTorch, NumPy, SciPy, une carte graphique : non.

@@ -1,0 +1,19 @@
+{
+  "FORMAT": "RATISS_BOUCHE_V3",
+  "lam": 0.75,
+  "memoire": 8,
+  "temperature": 0.7,
+  "contraste": true,
+  "registre_courant": "ordre",
+  "registres": {},
+  "theme": {},
+  "chaines": [],
+  "meta": {
+    "etape": 0,
+    "phrases": 0,
+    "tokens": 0,
+    "tours": 0,
+    "decharges": 0,
+    "note": "Aucun arc. Ce n'est pas un bruit gaussien : c'est l'absence d'ordre. La bouche ne doit rien dire tant que ce fichier n'a pas vu de texte."
+  }
+}
