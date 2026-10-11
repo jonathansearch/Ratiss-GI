@@ -315,6 +315,10 @@ class TissuScelle:
                 if cible != cle and poids > 0
             ]
 
+        def _degre(nom: str):
+            cle = self.cle(nom) or nom
+            return len(self.liens_sortants(cle))
+
         sources = []
         for s in concepts_sources:
             cle = self.cle(s)
@@ -324,6 +328,7 @@ class TissuScelle:
             seuil_energie=seuil_energie,
             max_sauts=max_sauts,
             voisins=_voisins,
+            degre=_degre,
             **kwargs,
         )
 

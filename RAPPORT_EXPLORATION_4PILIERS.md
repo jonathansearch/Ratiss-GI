@@ -54,3 +54,22 @@ Forcer un filtre de mots grammaticaux dans le défaut aurait fait gagner un autr
 4. **Ne pas dépasser deux sauts sur ce fichier** tant que les hubs ne sont pas traités. À 2 sauts le budget (50 000 expansions) n'a pas cassé. À 3 sauts la vague part des voisins de `de` et le dictionnaire devient le vocabulaire entier. Le retour porte `tronque` si le budget saute : ne pas lire un carrefour tronqué comme un verdict.
 
 Les piliers 1 à 3 n'ont pas ce goulet. Ils sont dans `docs/QUATRE_PILIERS.md`.
+
+
+## Mise à jour — Résolution des Hubs par Normalisation du Degré (2026-10-11)
+
+L'implémentation de la loi `poids / ln(max(e, degre(cible)))` dans `piliers/resonance.py` permet d'étouffer les hubs syntaxiques :
+
+1. **Sur le graphe avec overlay causal (Pilier 1 ou 3) :**
+   - Sans normalisation : `de` (2,565), `un` (2,157), `le` (2,154), `lune` (#8, 1,592).
+   - Avec normalisation de degré :
+     * `#1 brille` (0,378, degré 4)
+     * `#2 lune` (0,252, degré 34) — **Podium direct !**
+     * `#3 de` (0,194, degré 20 644)
+     * `#8 le` (0,138, degré 16 922)
+     * `gravite` passe du rang #5 867 au rang **#21**.
+   - Le hub `de` est relégué derrière `lune`, et `le` s'effondre au 8e rang.
+
+2. **Sur le test unitaire `test_normalisation_degre_etouffe_les_hubs` :**
+   - Face à un hub artificiel de 50 liens, `lune` (1 lien) conserve 1,0 d'énergie tandis que le hub est étouffé à 0,255 (rapport supérieur à 3,9x).
+   - 26 tests au vert sur CPU stdlib (3,2 s).

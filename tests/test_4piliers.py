@@ -212,6 +212,20 @@ class TestResonance(unittest.TestCase):
         self.assertEqual(res["carrefour"], "lune")
         self.assertFalse(res["tronque"])
 
+    def test_normalisation_degre_etouffe_les_hubs(self):
+        # Un hub 'de' (50 liens) et une cible sémantique 'lune' (1 lien)
+        graphe = {
+            "soleil": {"lune": 10.0, "de": 10.0},
+            "maree": {"lune": 10.0, "de": 10.0},
+            "lune": {"nuit": 1.0},
+            "de": {f"mot_{i}": 5.0 for i in range(50)},
+        }
+        res = raisonner_par_resonance(["soleil", "maree"], graphe=graphe, normaliser_degre=True)
+        self.assertEqual(res["carrefour"], "lune")
+        self.assertAlmostEqual(res["energie"]["lune"], 1.0)
+        self.assertLess(res["energie"]["de"], 0.3)
+        self.assertGreater(res["energie"]["lune"], res["energie"]["de"] * 3)
+
 
 class TestLangageSimple(unittest.TestCase):
     def test_le_chat_mange(self):
