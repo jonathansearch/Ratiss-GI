@@ -166,6 +166,7 @@ def entrainer_langue(
     lam: float = 0.75,
     memoire: int = 8,
     audit_max: int = 5,
+    normaliser_degre: bool = True,
 ) -> dict:
     sortie.mkdir(parents=True, exist_ok=True)
     journal = []
@@ -248,24 +249,39 @@ def entrainer_langue(
     # graver_chaine a pu laisser le registre courant sur « fait ».
     bouche.registre = registre
 
+    tissu = None
+    if cerveau and Path(cerveau).is_file():
+        try:
+            from ratiss_v3 import TissuScelle
+            tissu = TissuScelle(str(cerveau))
+            tissu.normaliser_degre = normaliser_degre
+        except Exception:
+            tissu = None
+
     mesures_modes = {}
     if lignes_ecart:
         texte_ecart = "\n".join(lignes_ecart)
-        for mode, mem in (
-            ("theme", 1),
-            ("ordre", 1),
-            ("trigramme", 1),
-            ("lumiere", memoire),
-            ("mixte", memoire),
-        ):
-            ev = bouche.evaluer(texte_ecart, tissu=None, mode=mode, lam=lam, memoire=mem)
+        eval_modes = [
+            ("theme", 1, None),
+            ("ordre", 1, None),
+            ("trigramme", 1, None),
+            ("lumiere", memoire, None),
+            ("mixte", memoire, None),
+        ]
+        if tissu is not None:
+            eval_modes.append(("tissu", 1, tissu))
+            eval_modes.append(("mixte_tissu", memoire, tissu))
+
+        for mode, mem, t_inst in eval_modes:
+            mode_eval = "mixte" if mode == "mixte_tissu" else mode
+            ev = bouche.evaluer(texte_ecart, tissu=t_inst, mode=mode_eval, lam=lam, memoire=mem)
             mesures_modes[mode] = {
                 "top5": ev["top5"],
                 "hits": ev["hits"],
                 "total": ev["total"],
                 "details": ev["details"],
             }
-        pas("top5", "écart seulement, tissu non mélangé")
+        pas("top5", "écart seulement" + (" (avec tissu scellé normalisé)" if tissu else ", tissu non mélangé"))
     else:
         texte_ecart = ""
         pas("top5", "omis")
@@ -273,7 +289,7 @@ def entrainer_langue(
     audits = []
     if texte_ecart and audit_max > 0:
         for hist, vrai in positions_audit(texte_ecart, audit_max):
-            exp = alleger(bouche.expliquer_generation(vrai, hist, lam=lam, memoire=memoire))
+            exp = alleger(bouche.expliquer_generation(vrai, hist, tissu=tissu, lam=lam, memoire=memoire))
             audits.append(
                 {
                     "hist": hist,
@@ -372,6 +388,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--retouches", default=None)
     p.add_argument("--charger", default=None)
     p.add_argument("--cerveau", default=None, help="seulement pour le hash. Le graphe n'est pas chargé")
+    p.add_argument("--sans-normalisation-degre", action="store_true", help="désactiver la normalisation par ln(degre)")
     p.add_argument("--lam", type=float, default=0.75)
     p.add_argument("--memoire", type=int, default=8)
     p.add_argument("--audit", type=int, default=5)
@@ -393,6 +410,7 @@ def main(argv: list[str] | None = None) -> int:
             lam=a.lam,
             memoire=a.memoire,
             audit_max=a.audit,
+            normaliser_degre=not a.sans_normalisation_degre,
         )
     except (OSError, ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)

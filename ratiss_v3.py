@@ -332,8 +332,13 @@ class TissuScelle:
             **kwargs,
         )
 
-    def scores_theme(self, historique: list[str], memoire: int) -> dict[str, float]:
-        """Résonance du tissu : qui fréquente les mots déjà dits. Pas un ordre."""
+    def scores_theme(self, historique: list[str], memoire: int, normaliser_degre: bool = True) -> dict[str, float]:
+        """Résonance du tissu : qui fréquente les mots déjà dits. Pas un ordre.
+        
+        Si normaliser_degre=True (défaut), divise chaque apport par ln(max(e, degre(cible)))
+        pour étouffer l'accumulation artificielle dans les hubs syntaxiques (de, le, a...).
+        """
+        import math
         scores: dict[str, float] = defaultdict(float)
         fenetre = historique[-max(1, memoire):]
         for dist, mot in enumerate(reversed(fenetre)):
@@ -341,10 +346,17 @@ class TissuScelle:
             cle = self.cle(mot)
             if not cle:
                 continue
-            for nom, force in self.liens_sortants(cle):
+            sortants = self.liens_sortants(cle)
+            for nom, force in sortants:
                 if nom == cle:
                     continue
-                scores[self.afficher(nom)] += lum * float(force)
+                cible = self.afficher(nom)
+                if normaliser_degre:
+                    deg = len(self.liens_sortants(nom))
+                    denom = math.log(max(math.e, float(deg)))
+                    scores[cible] += lum * (float(force) / denom)
+                else:
+                    scores[cible] += lum * float(force)
         return dict(scores)
 
     def sujet_sanctuaire(self, texte: str, tokens: list[str]) -> str | None:

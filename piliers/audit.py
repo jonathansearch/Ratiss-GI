@@ -84,16 +84,21 @@ def expliquer_generation(bouche, token_choisi, contexte, tissu=None, lam=None, m
             cle = tissu.cle(mot)
             if not cle:
                 continue
+            import math
             for nom, force in tissu.liens_sortants(cle):
                 if tissu.afficher(nom) != token:
                     continue
+                deg = len(tissu.liens_sortants(nom))
+                denom = math.log(max(math.e, float(deg)))
+                poids_eff = float(force) / denom
                 activations.append(
                     {
                         "noeud": mot,
                         "distance": dist,
                         "lumiere": lum,
                         "poids": float(force),
-                        "contribution": lum * float(force),
+                        "degre": deg,
+                        "contribution": lum * poids_eff,
                         "couche": "tissu",
                     }
                 )

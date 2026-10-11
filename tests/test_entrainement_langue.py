@@ -137,5 +137,30 @@ class TestOrganisation(unittest.TestCase):
         self.assertIsNone(mesures["tissu"])
 
 
+    def test_entrainement_avec_tissu_reel_et_normalisation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            berceau = Path(tmp) / "langue_avec_tissu"
+            cerveau = RACINE / "cerveau" / "RatissOne.ratiss"
+            if not cerveau.exists():
+                return
+            mesures = entrainer_langue(
+                education=RACINE / "corpus" / "prince_jouet.txt",
+                ecart=RACINE / "corpus" / "tenu_a_lecart.txt",
+                sortie=berceau,
+                registre="conte",
+                tours=1,
+                contraste=False,
+                cerveau=cerveau,
+                normaliser_degre=True,
+            )
+            self.assertTrue(mesures["tissu_intact"])
+            self.assertIn("mixte_tissu", mesures["modes"])
+            self.assertIn("tissu", mesures["modes"])
+            # Vérification du fichier de mesures
+            data = json.loads((berceau / "mesures.json").read_text(encoding="utf-8"))
+            self.assertIn("mixte_tissu", data["modes"])
+            self.assertTrue(data["tissu_intact"])
+
+
 if __name__ == "__main__":
     unittest.main()

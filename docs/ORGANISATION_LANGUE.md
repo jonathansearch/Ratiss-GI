@@ -58,7 +58,7 @@ Le tissu scellé reste où il était :
 cerveau/RatissOne.ratiss         lecture seule
 ```
 
-La méthode hash ce fichier avant et après si tu passes `--cerveau`. Elle ne l'ouvre pas comme JSON. Le thème du tissu n'entre donc pas dans ce top-5. Pour le mélanger à la parole, c'est plus tard, au moment de parler (`--lam`), pas pendant le compte. Sinon tu mesures la nuée et tu crois mesurer la suite.
+La méthode hash ce fichier avant et après si tu passes `--cerveau` (garantie R4-R7 d'immuabilité). Si le fichier est présent et valide, elle évalue également le mode `mixte_tissu` avec la loi de normalisation par le degré `ln(degre)` (qui étouffe les hubs syntaxiques comme `de`/`le`), permettant de mesurer conjointement la Bouche et le Tissu scellé purifié.
 
 ## Qui a le droit d'écrire où
 
@@ -179,7 +179,7 @@ python3 entrainement/entrainer_langue.py \
 
 - Elle ne choisit pas le dataset. Ça reste `docs/ENTRAINEMENT.md`.
 - Elle ne crée pas un secteur par corpus.
-- Elle ne met pas la résonance dans la boucle d'apprentissage. La résonance lit un graphe. Elle ne compte pas des mots. Sur le tissu scellé elle met `de` devant `lune` : ce n'est pas un signal d'entraînement.
+- Elle ne met pas la résonance dans la boucle d'apprentissage. La résonance lit un graphe. Elle ne compte pas des mots. Sur le tissu scellé, la normalisation par le degré relègue les hubs (`de` passe derrière `lune`, `lune` au rang #2) : la résonance reste un mécanisme d'exploration conceptuelle et d'audit, pas un gradient d'apprentissage.
 - Elle ne lance pas le contraste sur un épisode. Sinon le fait neuf déchargerait des rivaux qu'il n'a pas le droit de juger.
 - Elle ne publie pas le top-5 du texte vu comme si c'était le juge.
 - Elle s'arrête quand tu le décides, en relisant `mesures.json`. Trois tours, on mesure, on ne relit pas cinquante fois.
