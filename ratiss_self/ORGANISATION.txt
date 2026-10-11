@@ -1,8 +1,8 @@
-MÉTHODE RATISS_GPU_VRAM_VECTORIEL_V3
-Moteur     : NVIDIA CUDA VRAM
-Vitesse    : 2,435,758 tokens/seconde
-Temps VRAM : 6.32 s
-Arcs       : 881,690
-Trigrammes : 1,967,213
-Top-5      : 37.5 %
+MÉTHODE RATISS_GPU_VRAM_ULTIME_V4
+Moteur     : NVIDIA CUDA VRAM MULTI-STREAMS (10 Go+)
+Vitesse    : 1,567,437 tokens/seconde
+Temps VRAM : 21.70 s
+Arcs       : 2,567,871
+Trigrammes : 6,504,714
+Top-5      : 28.5 %
 Destination: sortie/langue_massive/bouche.bouche

@@ -1,19 +1,19 @@
 {
-  "methode": "RATISS_GPU_VRAM_VECTORIEL_V3",
-  "vitesse_tokens_sec": 2435757,
-  "temps_calcul_sec": 6.316,
-  "arcs": 881690,
-  "trigrammes": 1967213,
+  "methode": "RATISS_GPU_VRAM_ULTIME_V4",
+  "vitesse_tokens_sec": 1567437,
+  "temps_calcul_sec": 21.696,
+  "arcs": 2567871,
+  "trigrammes": 6504714,
   "modes": {
     "trigramme": {
-      "top5": 0.37479311988215414,
-      "hits": 86506,
-      "total": 230810
+      "top5": 0.28502371123091114,
+      "hits": 360258,
+      "total": 1263958
     },
     "ordre": {
-      "top5": 0.3044885403578701,
-      "hits": 70279,
-      "total": 230810
+      "top5": 0.2645649618104399,
+      "hits": 334399,
+      "total": 1263958
     }
   },
   "bouche": "sortie/langue_massive/bouche.bouche"
