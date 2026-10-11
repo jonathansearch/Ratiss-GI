@@ -1,0 +1,24 @@
+{
+  "methode": "RATISS_LANGUE_GPU_V1",
+  "moteur": "cuda",
+  "temps_secondes": 87.29,
+  "vitesse_tokens_sec": 9844,
+  "education_lignes": 15431,
+  "ecart_lignes": 2722,
+  "arcs": 123770,
+  "trigrammes": 208080,
+  "decharges": 683998,
+  "modes": {
+    "trigramme": {
+      "top5": 0.20470502271499824,
+      "hits": 12887,
+      "total": 62954
+    },
+    "ordre": {
+      "top5": 0.1722368713663945,
+      "hits": 10843,
+      "total": 62954
+    }
+  },
+  "bouche": "sortie/langue_massive/bouche.bouche"
+}

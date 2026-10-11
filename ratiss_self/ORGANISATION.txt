@@ -1,0 +1,7 @@
+MÉTHODE RATISS_LANGUE_GPU_V1
+Moteur : CUDA
+Arcs   : 123,770
+Trigrammes : 208,080
+Temps  : 87.3 secondes (9,844 tokens/s)
+Top-5 sur écart : 20.5 %
+Destination : sortie/langue_massive/bouche.bouche
