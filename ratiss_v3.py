@@ -194,6 +194,8 @@ class TissuScelle:
             self.adj[a].append((b, force))
             if a != b:
                 self.adj[b].append((a, force))
+        # Différentiel de session. Une case, pas une reconstruction du gel.
+        self._delta: dict[str, dict[str, float | None]] = {}
         self.dt = time.time() - t0
 
     @staticmethod
@@ -222,7 +224,7 @@ class TissuScelle:
         cle = self.cle(mot)
         if not cle:
             return []
-        brut = self.adj.get(cle, [])
+        brut = self.liens_sortants(cle)
         # Force d'abord, puis l'alphabet : c'est exactement ce que le tri du
         # lien produit quand des centaines de forces valent 100.
         rang = sorted(brut, key=lambda kv: (-kv[1], kv[0]))
@@ -237,6 +239,94 @@ class TissuScelle:
                 break
         return out
 
+    def _resoudre_cle(self, mot: str) -> str:
+        m = norm(mot)
+        trouvee = self.cle(m)
+        return trouvee if trouvee is not None else m
+
+    def editer_synapse(self, source: str, cible: str, nouveau_poids: float) -> dict:
+        """Pose un poids dans l'overlay. N'itère pas les 428 471 liens."""
+        poids = float(nouveau_poids)
+        if poids < 0:
+            raise ValueError("poids négatif : appeler supprimer_synapse")
+        a = self._resoudre_cle(source)
+        b = self._resoudre_cle(cible)
+        slot = self._delta.setdefault(a, {})
+        if poids == 0.0:
+            slot[b] = None
+        else:
+            slot[b] = poids
+        return {
+            "couche": "overlay",
+            "source": a,
+            "cible": b,
+            "poids": None if poids == 0.0 else poids,
+        }
+
+    def supprimer_synapse(self, source: str, cible: str) -> dict:
+        """Masque un arc. La liste gelée reste en mémoire, elle n'est plus lue."""
+        a = self._resoudre_cle(source)
+        b = self._resoudre_cle(cible)
+        self._delta.setdefault(a, {})[b] = None
+        return {"couche": "overlay", "source": a, "cible": b, "poids": None}
+
+    def exporter_delta(self) -> dict:
+        """Le gel reste dans le .ratiss. Le delta, s'il doit vivre, s'écrit à côté."""
+        return {
+            a: {b: (None if p is None else float(p)) for b, p in dest.items()}
+            for a, dest in self._delta.items()
+        }
+
+    def appliquer_delta(self, delta: dict) -> int:
+        n = 0
+        for a, dest in delta.items():
+            slot = self._delta.setdefault(str(a), {})
+            for b, poids in dest.items():
+                slot[str(b)] = None if poids is None else float(poids)
+                n += 1
+        return n
+
+    def liens_sortants(self, cle: str) -> list[tuple[str, float]]:
+        """Adjacence locale : le gel, puis le delta de cette source seulement."""
+        fusion: dict[str, float] = {}
+        for nom, force in self.adj.get(cle, []):
+            fusion[nom] = float(force)
+        for nom, force in self._delta.get(cle, {}).items():
+            if force is None:
+                fusion.pop(nom, None)
+            else:
+                fusion[nom] = float(force)
+        return list(fusion.items())
+
+    def raisonner_par_resonance(
+        self,
+        concepts_sources: list,
+        seuil_energie: float = 0.1,
+        max_sauts: int = 3,
+        **kwargs,
+    ) -> dict:
+        from piliers.resonance import raisonner_par_resonance as _resonner
+
+        def _voisins(nom: str):
+            cle = self.cle(nom) or nom
+            return [
+                (self.afficher(cible), float(poids))
+                for cible, poids in self.liens_sortants(cle)
+                if cible != cle and poids > 0
+            ]
+
+        sources = []
+        for s in concepts_sources:
+            cle = self.cle(s)
+            sources.append(self.afficher(cle) if cle else norm(s))
+        return _resonner(
+            sources,
+            seuil_energie=seuil_energie,
+            max_sauts=max_sauts,
+            voisins=_voisins,
+            **kwargs,
+        )
+
     def scores_theme(self, historique: list[str], memoire: int) -> dict[str, float]:
         """Résonance du tissu : qui fréquente les mots déjà dits. Pas un ordre."""
         scores: dict[str, float] = defaultdict(float)
@@ -246,7 +336,7 @@ class TissuScelle:
             cle = self.cle(mot)
             if not cle:
                 continue
-            for nom, force in self.adj.get(cle, []):
+            for nom, force in self.liens_sortants(cle):
                 if nom == cle:
                     continue
                 scores[self.afficher(nom)] += lum * float(force)
@@ -275,6 +365,7 @@ class Bouche:
         self.trigrammes: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
         self.theme: dict[str, dict[str, float]] = {}
         self.chaines: list[dict] = []
+        self.episodique: list[dict] = []
         self.lam = 0.75
         self.memoire = 8
         self.temperature = 0.7
@@ -301,6 +392,7 @@ class Bouche:
             "trigrammes": self.trigrammes,
             "theme": self.theme,
             "chaines": self.chaines,
+            "episodique": self.episodique,
             "meta": self.meta,
         }
 
@@ -333,6 +425,7 @@ class Bouche:
         b.trigrammes = data.get("trigrammes", {})
         b.theme = data.get("theme", {})
         b.chaines = data.get("chaines", [])
+        b.episodique = data.get("episodique", [])
         b.meta = data.get("meta", b.meta)
         return b
 
@@ -356,6 +449,43 @@ class Bouche:
             for reg in self.trigrammes.values()
             for milieu in reg.values()
             for suite in milieu.values()
+        )
+
+    def editer_synapse(self, source: str, cible: str, nouveau_poids: float, registre: str | None = None) -> dict:
+        from piliers.neurochirurgie import editer_bouche
+
+        return editer_bouche(self, source, cible, nouveau_poids, registre)
+
+    def supprimer_synapse(self, source: str, cible: str, registre: str | None = None) -> dict:
+        from piliers.neurochirurgie import supprimer_bouche
+
+        return supprimer_bouche(self, source, cible, registre)
+
+    def apprendre_phrase_live(self, phrase, registre: str = "episodique") -> dict:
+        from piliers.episodique import apprendre_phrase_live as _apprendre
+
+        return _apprendre(self, phrase, registre)
+
+    def expliquer_generation(self, token_choisi, contexte, tissu: TissuScelle | None = None, lam: float | None = None, memoire: int | None = None) -> dict:
+        from piliers.audit import expliquer_generation as _expliquer
+
+        return _expliquer(self, token_choisi, contexte, tissu=tissu, lam=lam, memoire=memoire)
+
+    def raisonner_par_resonance(
+        self,
+        concepts_sources: list,
+        seuil_energie: float = 0.1,
+        max_sauts: int = 3,
+        **kwargs,
+    ) -> dict:
+        from piliers.resonance import raisonner_par_resonance as _resonner
+
+        return _resonner(
+            concepts_sources,
+            seuil_energie=seuil_energie,
+            max_sauts=max_sauts,
+            graphe=self.theme,
+            **kwargs,
         )
 
     # ---------- apprentissage ----------

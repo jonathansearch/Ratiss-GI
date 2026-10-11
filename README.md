@@ -117,9 +117,13 @@ corpus/                      jouets + la façon d'organiser un vrai corpus
 docs/RATISS-VS-GPT.md
 docs/ENTRAINEMENT.md
 docs/BOUCHE.md
+docs/QUATRE_PILIERS.md
+piliers/                      synapse O(1), audit, épisode vif, résonance
 ```
 
-Lire ensuite [pourquoi ce n'est pas un GPT](docs/RATISS-VS-GPT.md), [comment entraîner, sur quoi, et sur quelle machine](docs/ENTRAINEMENT.md), [comment la parole est représentée sans transformeur](docs/BOUCHE.md).
+Lire ensuite [pourquoi ce n'est pas un GPT](docs/RATISS-VS-GPT.md), [comment entraîner, sur quoi, et sur quelle machine](docs/ENTRAINEMENT.md), [comment la parole est représentée sans transformeur](docs/BOUCHE.md), [les quatre opérations mesurées](docs/QUATRE_PILIERS.md).
+
+Le tissu scellé ne contient pas l'arc `soleil—lune`. La résonance sur ce fichier met `de` devant `lune`. Le chiffre, et pourquoi on ne l'habille pas, est dans [le rapport](RAPPORT_EXPLORATION_4PILIERS.md).
 
 ## Ce qu'on arrête
 
