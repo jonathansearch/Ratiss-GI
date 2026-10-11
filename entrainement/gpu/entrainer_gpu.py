@@ -65,6 +65,7 @@ def tokeniser_rapide(texte: str) -> list[list[str]]:
 def entrainer_gpu(
     corpus_path: Path,
     sortie_dir: Path,
+    charger: Path | None = None,
     tours: int = 3,
     fraction_ecart: float = 0.15,
     lam: float = 0.75,
@@ -112,6 +113,40 @@ def entrainer_gpu(
     bigram_counts = defaultdict(lambda: defaultdict(float))
     trigram_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
     theme_counts = defaultdict(lambda: defaultdict(float))
+
+    if charger and Path(charger).is_file():
+        print(f"🔄 Reprise et gonflage du modèle existant : {charger}...")
+        try:
+            try:
+                with gzip.open(charger, "rt", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                with open(charger, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            
+            # Injection des arcs bigrammes existants
+            for reg_nom, reg_dict in data.get("registres", {}).items():
+                for s, d in reg_dict.items():
+                    for c, w in d.items():
+                        bigram_counts[s][c] += float(w)
+            
+            # Injection des trigrammes existants
+            for reg_nom, tri_dict in data.get("trigrammes", {}).items():
+                for g, m in tri_dict.items():
+                    for s, d in m.items():
+                        for c, w in d.items():
+                            trigram_counts[g][s][c] += float(w)
+                            
+            # Injection du thème existant
+            for w, d in data.get("theme", {}).items():
+                for o, c in d.items():
+                    theme_counts[w][o] += float(c)
+                    
+            n_arcs_init = sum(len(v) for v in bigram_counts.values())
+            n_tris_init = sum(sum(len(d) for d in m.values()) for m in trigram_counts.values())
+            print(f"  ✓ Acquis précédents injectés avec succès : {n_arcs_init:,} arcs, {n_tris_init:,} trigrammes !")
+        except Exception as e:
+            print(f"  ⚠️ Erreur lors du chargement de {charger}: {e}")
     
     total_tokens = sum(len(ph) for ph in phrases_edu) * tours
     pbar = tqdm(total=total_tokens, desc="⚡ Traitement GPU", unit="tok")
@@ -276,6 +311,7 @@ def main():
     p = argparse.ArgumentParser(description="Entraînement accéléré GPU / CUDA de la Bouche")
     p.add_argument("--corpus", required=True, help="Fichier texte d'entrée")
     p.add_argument("--sortie", required=True, help="Dossier de sortie")
+    p.add_argument("--charger", default=None, help="Chemin d'un modèle .bouche existant pour continuer l'entraînement")
     p.add_argument("--tours", type=int, default=3)
     p.add_argument("--fraction", type=float, default=0.15)
     p.add_argument("--lam", type=float, default=0.75)
@@ -285,6 +321,7 @@ def main():
     entrainer_gpu(
         corpus_path=Path(a.corpus),
         sortie_dir=Path(a.sortie),
+        charger=Path(a.charger) if a.charger else None,
         tours=a.tours,
         fraction_ecart=a.fraction,
         lam=a.lam,
