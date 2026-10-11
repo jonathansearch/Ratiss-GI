@@ -118,10 +118,12 @@ docs/RATISS-VS-GPT.md
 docs/ENTRAINEMENT.md
 docs/BOUCHE.md
 docs/QUATRE_PILIERS.md
+docs/ORGANISATION_LANGUE.md
 piliers/                      synapse O(1), audit, épisode vif, résonance
+entrainement/entrainer_langue.py   les dix pas, prose puis faits, épisodes, retouches
 ```
 
-Lire ensuite [pourquoi ce n'est pas un GPT](docs/RATISS-VS-GPT.md), [comment entraîner, sur quoi, et sur quelle machine](docs/ENTRAINEMENT.md), [comment la parole est représentée sans transformeur](docs/BOUCHE.md), [les quatre opérations mesurées](docs/QUATRE_PILIERS.md).
+Lire ensuite [pourquoi ce n'est pas un GPT](docs/RATISS-VS-GPT.md), [comment entraîner, sur quoi, et sur quelle machine](docs/ENTRAINEMENT.md), [l'organisation des dix pas](docs/ORGANISATION_LANGUE.md), [comment la parole est représentée sans transformeur](docs/BOUCHE.md), [les quatre opérations mesurées](docs/QUATRE_PILIERS.md).
 
 Le tissu scellé ne contient pas l'arc `soleil—lune`. La résonance sur ce fichier met `de` devant `lune`. Le chiffre, et pourquoi on ne l'habille pas, est dans [le rapport](RAPPORT_EXPLORATION_4PILIERS.md).
 

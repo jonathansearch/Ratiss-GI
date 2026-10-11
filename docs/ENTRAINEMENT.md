@@ -2,6 +2,8 @@
 
 La méthode est une. Les datasets changent la **mise en forme**, pas la loi.
 
+L'ordre complet — prose, faits gelés, épisode vif, retouche d'une case, top-5 seulement sur l'écart — est `entrainement/entrainer_langue.py`. Les dix pas, les deux dossiers, et qui a le droit d'écrire où : [ORGANISATION_LANGUE.md](ORGANISATION_LANGUE.md). La boucle plus bas reste le compte seul, quand tu n'as pas besoin des dix pas.
+
 ## Le chiffre
 
 Sur un texte que `--eduquer` n'a pas vu :
@@ -154,7 +156,8 @@ On ne verse pas Wikipédia dans le sanctuaire. Le sanctuaire reste une main. Qua
 | Tokenizer | `tokenizer.json` | `pipeline/01_oreille.py` |
 | Étape 0 | poids gaussiens | `config/bouche_etape0.json` |
 | Corpus mis en forme | binarisé, ids | `entrainement/organiser_corpus.py` → `.txt` |
-| Boucle d'apprentissage | `train.py` | `pipeline/03_entrainer.py` |
+| Boucle d'apprentissage | `train.py` | `pipeline/03_entrainer.py` (le compte seul) |
+| Méthode langue | le script qui tient l'ordre | `entrainement/entrainer_langue.py` |
 | État d'optimiseur | Adam, non publié | rien : le compte est déjà le fichier |
 | Validation | loss sur un split | `pipeline/04_evaluer.py`, le top-5 |
 | Checkpoint | safetensors | `checkpoints/*.bouche` |

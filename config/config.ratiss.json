@@ -21,9 +21,16 @@
     "lumiere": 0.5,
     "temperature": 0.7,
     "contraste": {"bonus_vrai": 1.0, "malus_rival": 0.35},
-    "registres": ["ordre", "conte", "dialogue", "science", "fait"],
+    "registres": ["ordre", "conte", "dialogue", "science", "fait", "episodique"],
     "etape_0": "config/bouche_etape0.json"
   },
   "mesure": "top-5 du mot suivant, sur un texte non vu",
+  "entrainement_langue": {
+    "script": "entrainement/entrainer_langue.py",
+    "organisation": "docs/ORGANISATION_LANGUE.md",
+    "ordre": ["oreille", "separation", "etape_0", "prose", "faits", "episodes", "retouches", "top5", "audit", "depot"],
+    "tissu": "hash des octets si --cerveau est donné. Le graphe n'est pas chargé.",
+    "savoir": "aucun dans ce plan"
+  },
   "machine": "CPU. Pas de GPU pour cette bouche."
 }

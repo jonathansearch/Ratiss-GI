@@ -59,3 +59,14 @@ Chaque source émet 1. À chaque saut, l'arc le plus fort transmet la moitié. U
 Pas de phrase dans l'appel. Si le graphe a `soleil—lune` et `maree—lune`, le carrefour est `lune` et son énergie vaut 1.0 (½ + ½). C'est `tests/test_4piliers.py`.
 
 Sur `cerveau/RatissOne.ratiss`, ce n'est pas ce qui sort. Les chiffres sont dans `RAPPORT_EXPLORATION_4PILIERS.md`. La loi n'a pas été tordue pour les faire mentir.
+
+## Où ils entrent dans l'entraînement
+
+La méthode langue (`entrainement/entrainer_langue.py`, détaillée dans `docs/ORGANISATION_LANGUE.md`) ne les mélange pas :
+
+| Pilier | Pas | Ce qu'elle refuse |
+|---|---|---|
+| Neurochirurgie | 7, retouches, après le compte | ré-entraîner pour changer une case |
+| Audit | 9, sur l'écart seulement | une phrase écrite après coup |
+| Épisode vif | 6, une passe, contraste coupé | un second tour qui décharge les rivaux |
+| Résonance | pas dans la boucle | s'en servir comme perte ou comme professeur |
