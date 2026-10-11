@@ -3,6 +3,5 @@ __pycache__/
 .ipynb_checkpoints/
 checkpoints/
 sortie/
-*.bouche
 bouche.json
 corpus/dialogue_jouet.txt
